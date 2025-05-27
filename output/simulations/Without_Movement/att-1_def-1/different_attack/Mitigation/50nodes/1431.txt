@@ -1,0 +1,4 @@
+@@   New Simulation   @@
+Seed RngRun: 1431
+Attack: ON
+Defence: ON

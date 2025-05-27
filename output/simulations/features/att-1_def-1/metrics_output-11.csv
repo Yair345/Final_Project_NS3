@@ -1,0 +1,20 @@
+Metric,Value
+Packet Delivery Ratio (%),100
+Packet Loss Ratio (%),0
+End-to-End Delay (s),0.000292585
+Jitter (s),0.000136509
+Throughput (Mbps),0.0529467
+Average Hop Count,0.00410813
+Total Energy Consumed (J),0
+Average Node Speed (m/s),0
+Energy Efficiency (bits/Joule),0
+Normalized Routing Load,0.198833
+Average TC Packet Rows,2
+Routing Overhead,0.198833
+MAC Layer Overhead,0
+macDataPkts,12171
+macControlPkts,0
+HELLO packets,151
+TC packets,654
+MID packets,0
+HNA packets,0

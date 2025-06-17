@@ -74,3 +74,18 @@ Node id: 47, nodes in routing table: 48.   MPRs(2): 10.0.0.9, 10.0.0.29,
 Node id: 48, nodes in routing table: 48.   MPRs(3): 10.0.0.5, 10.0.0.20, 10.0.0.42, 
 Node id: 49, nodes in routing table: 48.   MPRs(4): 10.0.0.2, 10.0.0.13, 10.0.0.40, 10.0.0.45, 
 Routing Percentage: 0.2
+@@   New Simulation   @@
+Seed RngRun: 36
+ML Dataset Run: 36
+Output Directory: ./simulations/features/
+Attack: ON
+Defence: ON
+Phase Schedule:
+- Phase 1 (0-60s): Network stabilization
+- Phase 2 (61-80s): Baseline measurement
+- Phase 3 (80s): Defense activation
+- Phase 4 (80-140s): Defense stabilization
+- Phase 5 (141-160s): Defense measurement
+- Phase 6 (160s): Attack activation
+- Phase 7 (160-220s): Attack/Defense interaction
+- Phase 8 (221-240s): Attack vs Defense measurement

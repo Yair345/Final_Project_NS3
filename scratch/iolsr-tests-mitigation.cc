@@ -12,6 +12,8 @@
 #include "ns3/energy-module.h"
 #include "ns3/ipv4-routing-table-entry.h"
 #include <string>
+#include <sstream>
+#include <iomanip>
 
 using namespace ns3;
 
@@ -25,6 +27,29 @@ uint32_t g_helloCount = 0;
 uint32_t g_tcCount = 0;
 uint32_t g_midCount = 0;
 uint32_t g_hnaCount = 0;
+
+// uint32_t g_hnaCount = 0;
+
+// Phase-based measurement variables
+Ptr<FlowMonitor> g_baselineFlowMonitor;
+Ptr<FlowMonitor> g_defenseFlowMonitor;
+Ptr<FlowMonitor> g_attackFlowMonitor;
+
+// Timing constants for the new phases
+const double BASELINE_START = 61.0;
+const double BASELINE_END = 80.0;
+const double DEFENSE_ACTIVATION = 80.0;
+const double DEFENSE_MEASUREMENT_START = 141.0;
+const double DEFENSE_MEASUREMENT_END = 160.0;
+const double ATTACK_ACTIVATION = 160.0;
+const double ATTACK_MEASUREMENT_START = 221.0;
+const double ATTACK_MEASUREMENT_END = 240.0;
+const double MEASUREMENT_DURATION = 20.0;
+
+// Base output directory for the three scenarios
+std::string g_outputBaseDir = "./simulations/features/";
+uint32_t g_currentRun = 1;
+
 
 void MacTxCallback(std::string context, Ptr<const Packet> packet) {
     macDataPkts++;
@@ -432,23 +457,23 @@ bool bEnableFictive;
 bool bIsolationAttackNeighbor;
 bool bEnableFictiveMitigation;
 
-static void PrintSimStats(NodeContainer* cont){
+// static void PrintSimStats(NodeContainer* cont){
 
-	std::cout << "@@   New Simulation   @@" << std::endl;
-	std::cout << "Seed RngRun: " << RngSeedManager::GetRun() << std::endl;
-	if(bIsolationAttackBug || bIsolationAttackNeighbor){
-	std::cout << "Attack: ON" << std::endl;
-	} else{
-		std::cout << "Attack: OFF" << std::endl;
-	}
-	if(bEnableFictive || bEnableFictiveMitigation){
-		std::cout << "Defence: ON" << std::endl;
-	} else{
-		std::cout << "Defence: OFF" << std::endl;
-	}
+// 	std::cout << "@@   New Simulation   @@" << std::endl;
+// 	std::cout << "Seed RngRun: " << RngSeedManager::GetRun() << std::endl;
+// 	if(bIsolationAttackBug || bIsolationAttackNeighbor){
+// 	std::cout << "Attack: ON" << std::endl;
+// 	} else{
+// 		std::cout << "Attack: OFF" << std::endl;
+// 	}
+// 	if(bEnableFictive || bEnableFictiveMitigation){
+// 		std::cout << "Defence: ON" << std::endl;
+// 	} else{
+// 		std::cout << "Defence: OFF" << std::endl;
+// 	}
 
 	
-}
+// }
 
 void ExtractAndLogMetrics(Ptr<FlowMonitor> flowMon, FlowMonitorHelper &flowHelper, NodeContainer &nodes, const char* filename) {
     std::ofstream file(filename);
@@ -531,6 +556,296 @@ void ExtractAndLogMetrics(Ptr<FlowMonitor> flowMon, FlowMonitorHelper &flowHelpe
     std::cout << "Metrics written to " << filename << std::endl;
 }
 
+// Function to create output directories
+static void CreateOutputDirectories() {
+    system(("mkdir -p " + g_outputBaseDir + "baseline/").c_str());
+    system(("mkdir -p " + g_outputBaseDir + "defense/").c_str());
+    system(("mkdir -p " + g_outputBaseDir + "defense_vs_attack/").c_str());
+}
+
+// Convert number to string (C++11 compatible)
+std::string ToString(uint32_t value) {
+    std::ostringstream oss;
+    oss << value;
+    return oss.str();
+}
+
+std::string ToString(double value) {
+    std::ostringstream oss;
+    oss << std::fixed << std::setprecision(6) << value;
+    return oss.str();
+}
+
+// Function to save metrics for a specific scenario (C++11 compatible with all metrics)
+static void SaveScenarioMetrics(const std::string& scenario, Ptr<FlowMonitor> flowMon, 
+                               FlowMonitorHelper& flowHelper, NodeContainer& nodes, 
+                               double startTime, double endTime) {
+    
+    std::string filename = g_outputBaseDir + scenario + "/metrics_output-" + 
+                          ToString(g_currentRun) + ".csv";
+    
+    std::ofstream file(filename.c_str());
+    if (!file.is_open()) {
+        NS_LOG_ERROR("Cannot open file: " << filename);
+        return;
+    }
+    
+    // Write CSV header
+    file << "Scenario,Metric,Value,StartTime,EndTime,Duration\n";
+    file << std::fixed << std::setprecision(6);
+    
+    // Calculate metrics using your existing ExtractAndLogMetrics logic
+    if (flowMon) {
+        flowMon->CheckForLostPackets();
+        Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier>(flowHelper.GetClassifier());
+        std::map<FlowId, FlowMonitor::FlowStats> stats = flowMon->GetFlowStats();
+
+        double totalTxPackets = 0, totalRxPackets = 0, totalLostPackets = 0, totalDelay = 0;
+        double totalThroughput = 0, totalJitter = 0, totalHopCount = 0;
+        double measurementDuration = endTime - startTime;
+
+        // C++11 compatible iteration
+        std::map<FlowId, FlowMonitor::FlowStats>::iterator it;
+        for (it = stats.begin(); it != stats.end(); ++it) {
+            totalTxPackets += it->second.txPackets;
+            totalRxPackets += it->second.rxPackets;
+            totalLostPackets += (it->second.txPackets - it->second.rxPackets);
+            totalDelay += it->second.delaySum.GetSeconds();
+            totalJitter += it->second.jitterSum.GetSeconds();
+            totalHopCount += (it->second.timesForwarded + 1);
+            if (it->second.timeLastRxPacket.GetSeconds() > it->second.timeFirstTxPacket.GetSeconds()) {
+                totalThroughput += it->second.rxBytes * 8.0 / 
+                    (it->second.timeLastRxPacket.GetSeconds() - it->second.timeFirstTxPacket.GetSeconds()) / 1e6;
+            }
+        }
+
+        double pdr = (totalTxPackets > 0) ? (totalRxPackets / totalTxPackets) * 100 : 0;
+        double plr = (totalTxPackets > 0) ? (totalLostPackets / totalTxPackets) * 100 : 0;
+        double avgDelay = (totalRxPackets > 0) ? (totalDelay / totalRxPackets) : 0;
+        double avgJitter = (totalRxPackets > 0) ? (totalJitter / totalRxPackets) : 0;
+        double avgHopCount = (totalRxPackets > 0) ? (totalHopCount / totalRxPackets) : 0;
+
+        // Calculate additional network metrics
+        double totalEnergyConsumed = 0.0;
+        double totalRoutingPackets = 0.0;
+        double avgTcRows = 0.0;
+        
+        // Calculate energy consumption (if energy sources are available)
+        for (uint32_t i = 0; i < nodes.GetN(); ++i) {
+            Ptr<EnergySource> energySource = nodes.Get(i)->GetObject<EnergySource>();
+            if (energySource) {
+                totalEnergyConsumed += (energySource->GetInitialEnergy() - energySource->GetRemainingEnergy());
+            }
+            
+            // Get routing table size and TC power level
+            Ptr<RoutingProtocol> routingProtocol = nodes.Get(i)->GetObject<RoutingProtocol>();
+            if (routingProtocol) {
+                totalRoutingPackets += routingProtocol->getRoutingTableSize();
+                avgTcRows += routingProtocol->tcPowerLevel(false);
+            }
+        }
+        
+        // Calculate derived metrics
+        double energyEfficiency = (totalEnergyConsumed > 0 && totalRxPackets > 0) ? 
+                                 (totalRxPackets * 8.0) / totalEnergyConsumed : 0;
+        double normalizedRoutingLoad = (totalRxPackets > 0) ? 
+                                      totalRoutingPackets / totalRxPackets : 0;
+        double routingOverhead = (totalRxPackets > 0) ? 
+                                totalRoutingPackets / totalRxPackets : 0;
+        double macOverhead = (macDataPkts + macControlPkts > 0) ?
+                            (double)macControlPkts / (macDataPkts + macControlPkts) : 0;
+        avgTcRows = avgTcRows / nodes.GetN();
+
+        // Write basic network performance metrics
+        file << scenario << ",PacketDeliveryRatio," << ToString(pdr) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",PacketLossRatio," << ToString(plr) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",EndToEndDelay," << ToString(avgDelay) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",Jitter," << ToString(avgJitter) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",Throughput," << ToString(totalThroughput) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",AverageHopCount," << ToString(avgHopCount) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        
+        // Write additional network performance metrics
+        file << scenario << ",TotalEnergyConsumed," << ToString(totalEnergyConsumed) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",EnergyEfficiency," << ToString(energyEfficiency) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",NormalizedRoutingLoad," << ToString(normalizedRoutingLoad) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",RoutingOverhead," << ToString(routingOverhead) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",MACLayerOverhead," << ToString(macOverhead) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",AverageTCPacketRows," << ToString(avgTcRows) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        
+        // Add OLSR packet rates (convert total counts to per-second rates)
+        file << scenario << ",HELLOPacketsPerSec," << ToString(g_helloCount / measurementDuration) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",TCPacketsPerSec," << ToString(g_tcCount / measurementDuration) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",MIDPacketsPerSec," << ToString(g_midCount / measurementDuration) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",HNAPacketsPerSec," << ToString(g_hnaCount / measurementDuration) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        
+        // Add MAC packet rates
+        file << scenario << ",MACDataPacketsPerSec," << ToString(macDataPkts / measurementDuration) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+        file << scenario << ",MACControlPacketsPerSec," << ToString(macControlPkts / measurementDuration) << "," 
+             << ToString(startTime) << "," << ToString(endTime) << "," << ToString(measurementDuration) << "\n";
+    }
+    
+    file.close();
+    NS_LOG_INFO("Scenario metrics saved to: " << filename);
+}
+
+// Function to reset OLSR packet counters
+static void ResetOlsrCounters() {
+    g_helloCount = 0;
+    g_tcCount = 0;
+    g_midCount = 0;
+    g_hnaCount = 0;
+    macDataPkts = 0;
+    macControlPkts = 0;
+    NS_LOG_INFO("OLSR counters reset at time " << Simulator::Now().GetSeconds());
+}
+
+static void EndBaselineMeasurement(NodeContainer* nodes) {
+    NS_LOG_INFO("Ending baseline measurement at " << Simulator::Now().GetSeconds() << "s");
+    
+    FlowMonitorHelper flowHelper;
+    SaveScenarioMetrics("baseline", g_baselineFlowMonitor, flowHelper, *nodes, 
+                       BASELINE_START, BASELINE_END);
+    
+    // Clean up
+    g_baselineFlowMonitor = 0; // C++11 compatible null assignment
+}
+
+// PHASE 2: Baseline measurement functions
+static void StartBaselineMeasurement(NodeContainer* nodes) {
+    NS_LOG_INFO("Starting baseline measurement at " << Simulator::Now().GetSeconds() << "s");
+    ResetOlsrCounters();
+    
+    // Create new FlowMonitor for baseline phase
+    FlowMonitorHelper flowHelper;
+    g_baselineFlowMonitor = flowHelper.InstallAll();
+    
+    // Schedule end of baseline measurement
+    Simulator::Schedule(Seconds(MEASUREMENT_DURATION), &EndBaselineMeasurement, nodes);
+}
+
+static void EndDefenseMeasurement(NodeContainer* nodes) {
+    NS_LOG_INFO("Ending defense measurement at " << Simulator::Now().GetSeconds() << "s");
+    
+    FlowMonitorHelper flowHelper;
+    SaveScenarioMetrics("defense", g_defenseFlowMonitor, flowHelper, *nodes, 
+                       DEFENSE_MEASUREMENT_START, DEFENSE_MEASUREMENT_END);
+    
+    // Clean up
+    g_defenseFlowMonitor = 0; // C++11 compatible null assignment
+}
+
+// PHASE 5: Defense measurement functions
+static void StartDefenseMeasurement(NodeContainer* nodes) {
+    NS_LOG_INFO("Starting defense measurement at " << Simulator::Now().GetSeconds() << "s");
+    ResetOlsrCounters();
+    
+    // Create new FlowMonitor for defense phase
+    FlowMonitorHelper flowHelper;
+    g_defenseFlowMonitor = flowHelper.InstallAll();
+    
+    // Schedule end of defense measurement
+    Simulator::Schedule(Seconds(MEASUREMENT_DURATION), &EndDefenseMeasurement, nodes);
+}
+
+static void EndAttackMeasurement(NodeContainer* nodes) {
+    NS_LOG_INFO("Ending attack vs defense measurement at " << Simulator::Now().GetSeconds() << "s");
+    
+    FlowMonitorHelper flowHelper;
+    SaveScenarioMetrics("defense_vs_attack", g_attackFlowMonitor, flowHelper, *nodes, 
+                       ATTACK_MEASUREMENT_START, ATTACK_MEASUREMENT_END);
+    
+    // Clean up
+    g_attackFlowMonitor = 0; // C++11 compatible null assignment
+}
+
+// PHASE 8: Attack vs Defense measurement functions
+static void StartAttackMeasurement(NodeContainer* nodes) {
+    NS_LOG_INFO("Starting attack vs defense measurement at " << Simulator::Now().GetSeconds() << "s");
+    ResetOlsrCounters();
+    
+    // Create new FlowMonitor for attack phase
+    FlowMonitorHelper flowHelper;
+    g_attackFlowMonitor = flowHelper.InstallAll();
+    
+    // Schedule end of attack measurement
+    Simulator::Schedule(Seconds(MEASUREMENT_DURATION), &EndAttackMeasurement, nodes);
+}
+
+// Enhanced connectivity check function
+static void CheckAndReportConnectivity(NodeContainer* cont) {
+    uint32_t fullyConnectedNodes = 0;
+    for (uint32_t i = 0; i < cont->GetN(); ++i) {
+        uint32_t routingTableSize = cont->Get(i)->GetObject<RoutingProtocol>()->getRoutingTableSize();
+        if (routingTableSize == cont->GetN() - 1) {
+            fullyConnectedNodes++;
+        }
+    }
+    
+    double connectivityRatio = (double)fullyConnectedNodes / cont->GetN();
+    NS_LOG_INFO("Connectivity check: " << fullyConnectedNodes << "/" << cont->GetN() 
+                << " nodes fully connected (" << (connectivityRatio * 100) << "%)");
+    
+    if (connectivityRatio < 0.8) { // 80% threshold
+        NS_LOG_WARN("Poor connectivity detected! Ratio: " << connectivityRatio);
+    }
+}
+
+// C++11 compatible logging functions (replace lambda functions)
+static void LogDefenseActivation() {
+    NS_LOG_INFO("Defense activation phase at " << Simulator::Now().GetSeconds() << "s");
+}
+
+static void LogAttackActivation() {
+    NS_LOG_INFO("Attack activation phase at " << Simulator::Now().GetSeconds() << "s");
+}
+
+// Enhanced simulation statistics with ML dataset info
+static void PrintSimStatsWithMLInfo(NodeContainer* cont) {
+    std::cout << "@@   New Simulation   @@" << std::endl;
+    std::cout << "Seed RngRun: " << RngSeedManager::GetRun() << std::endl;
+    std::cout << "ML Dataset Run: " << g_currentRun << std::endl;
+    std::cout << "Output Directory: " << g_outputBaseDir << std::endl;
+    
+    if (bIsolationAttackBug || bIsolationAttackNeighbor) {
+        std::cout << "Attack: ON" << std::endl;
+    } else {
+        std::cout << "Attack: OFF" << std::endl;
+    }
+    
+    if (bEnableFictive || bEnableFictiveMitigation) {
+        std::cout << "Defence: ON" << std::endl;
+    } else {
+        std::cout << "Defence: OFF" << std::endl;
+    }
+    
+    std::cout << "Phase Schedule:" << std::endl;
+    std::cout << "- Phase 1 (0-60s): Network stabilization" << std::endl;
+    std::cout << "- Phase 2 (61-80s): Baseline measurement" << std::endl;
+    std::cout << "- Phase 3 (80s): Defense activation" << std::endl;
+    std::cout << "- Phase 4 (80-140s): Defense stabilization" << std::endl;
+    std::cout << "- Phase 5 (141-160s): Defense measurement" << std::endl;
+    std::cout << "- Phase 6 (160s): Attack activation" << std::endl;
+    std::cout << "- Phase 7 (160-220s): Attack/Defense interaction" << std::endl;
+    std::cout << "- Phase 8 (221-240s): Attack vs Defense measurement" << std::endl;
+}
+
 /*
 static void PrintTopologySet(NodeContainer* cont)
 {
@@ -572,6 +887,8 @@ int main (int argc, char *argv[]){
 	// Variables
 	uint32_t nNodes = 50; //Number of nodes in the simulation, default 50
 
+	CreateOutputDirectories();
+
 	//X,Y simulation rectangle - the range of movement of the nodes in the simulation
 	double dMaxGridX = 750.0; //default 500x500
 	uint32_t nMaxGridX = 750;
@@ -582,8 +899,8 @@ int main (int argc, char *argv[]){
 	uint32_t nProtocol = 0; //IOLSR=0, DSDV=1
 
 	// Set running time
-	double dSimulationSeconds = 301.0;
-	uint32_t nSimulationSeconds = 301;
+	double dSimulationSeconds = 240.0;
+	uint32_t nSimulationSeconds = 240;
 	//double dSimulationSeconds = 301.0;
 	//uint32_t nSimulationSeconds = 301;
 
@@ -612,11 +929,15 @@ int main (int argc, char *argv[]){
 	bool printNodesDeclaringFictive = true;
 	uint32_t printNodeOutputLog = 999; // 999 to disable this function, otherwise supply node ID.
 	uint32_t assertConnectivityAtTime = 160; //The time for simulation termination if network is not fully connected.
-	uint32_t startAttackTime = 150; //The time for an attacker to start attacking.
-	uint32_t startDefenceTime = 60; //The time for defense to start.
-	uint32_t startUdpSend = 250; //The time to start sending messages to victim. total 18 msgs. 4sec intervals. 72seconds to complete.
-	uint32_t reportStatsAtTime = 295; //The time for simulation to report statistics and data to cout << .
-	
+	// uint32_t startAttackTime = 150; //The time for an attacker to start attacking.
+	// uint32_t startDefenceTime = 60; //The time for defense to start.
+	// uint32_t startUdpSend = 250; //The time to start sending messages to victim. total 18 msgs. 4sec intervals. 72seconds to complete.
+	// uint32_t reportStatsAtTime = 295; //The time for simulation to report statistics and data to cout << .
+	uint32_t startDefenceTime = 80;     // Defense activation
+	uint32_t startAttackTime = 160;     // Attack activation
+	uint32_t startUdpSend = 200;        // UDP traffic (optional, during attack phase)
+	uint32_t reportStatsAtTime = 235;   // Final stats reporting
+
 
 	// Parameters from command line
 	CommandLine cmd;
@@ -642,6 +963,8 @@ int main (int argc, char *argv[]){
 	cmd.AddValue("bConnectivityPrecentage", "Print connectivity precetage every X seconds", bConnectivityPrecentage);
 	cmd.AddValue("bIsolationAttackBug", "Have an attacker stick to it's target", bIsolationAttackBug);
 	cmd.AddValue("bUdpServer", "Try to send UDP packets from node1 to node0", bUdpServer);
+	cmd.AddValue("run", "Run number for output files", g_currentRun);
+	cmd.AddValue("outputDir", "Base output directory", g_outputBaseDir);
 	cmd.Parse (argc, argv);
 
 	if (nSimulationSeconds > 10.0) dSimulationSeconds = nSimulationSeconds; // Force minimum time
@@ -801,8 +1124,8 @@ int main (int argc, char *argv[]){
 	}
 
 
-	if(bPrintSimStats){
-		Simulator::Schedule(Seconds (5), &PrintSimStats, &nodes);
+	if (bPrintSimStats) {
+	    Simulator::Schedule(Seconds(5), &PrintSimStatsWithMLInfo, &nodes);
 	}
 	
 	if(printDetectionInC6){
@@ -919,6 +1242,28 @@ int main (int argc, char *argv[]){
 
 	// Print Topology Set
 	//Simulator::Schedule(Seconds (35) , &PrintTopologySet, &nodes);
+
+	// Schedule connectivity check before baseline
+	Simulator::Schedule(Seconds(58.0), &CheckAndReportConnectivity, &nodes);
+	
+	// Schedule Phase 2: Baseline measurement (61-80s)
+	Simulator::Schedule(Seconds(BASELINE_START), &StartBaselineMeasurement, &nodes);
+	
+	// Schedule Phase 5: Defense measurement (141-160s)
+	Simulator::Schedule(Seconds(DEFENSE_MEASUREMENT_START), &StartDefenseMeasurement, &nodes);
+	
+	// Schedule Phase 8: Attack vs Defense measurement (221-240s)
+	Simulator::Schedule(Seconds(ATTACK_MEASUREMENT_START), &StartAttackMeasurement, &nodes);
+	
+	// Add logging for existing defense activation
+	if (bEnableFictiveMitigation) {
+	    Simulator::Schedule(Seconds(DEFENSE_ACTIVATION), &LogDefenseActivation);
+	}
+	
+	// Add logging for existing attack activation
+	if (bIsolationAttackNeighbor) {
+	    Simulator::Schedule(Seconds(ATTACK_ACTIVATION), &LogAttackActivation);
+	}
 	
 	// Animation
 	AnimationInterface anim ("Stable_Network_animation.xml");
@@ -933,9 +1278,9 @@ int main (int argc, char *argv[]){
 	//sspcap << "BottleNeck_" << "FixPos_" << bFixPos << "_";
 	//wifiPhy.EnablePcapAll (sspcap.str());
 
-	Ptr<FlowMonitor> flowMon;
-	FlowMonitorHelper flowHelper;
-	flowMon = flowHelper.InstallAll();
+	// Ptr<FlowMonitor> flowMon;
+	// FlowMonitorHelper flowHelper;
+	// flowMon = flowHelper.InstallAll();
 
 	Config::Connect("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Mac/MacTx", MakeCallback(&MacTxCallback));
 	Config::Connect("/NodeList/*/DeviceList/*/$ns3::WifiNetDevice/Mac/MacTxDrop", MakeCallback(&MacTxControlCallback));
@@ -956,7 +1301,7 @@ int main (int argc, char *argv[]){
 	std::ostringstream oss;
 	oss << "./simulations/features/att-1_def-1/metrics_output-" << RngSeedManager::GetRun() << ".csv";
 
-	ExtractAndLogMetrics(flowMon, flowHelper, nodes, oss.str().c_str());
+	// ExtractAndLogMetrics(flowMon, flowHelper, nodes, oss.str().c_str());
 
 	Simulator::Destroy ();
 

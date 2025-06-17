@@ -1,0 +1,31 @@
+ML Dataset Generation Summary Report
+Generated on: ג' יונ 17 22:14:04 IDT 2025
+========================================
+
+Simulation Configuration:
+- Total simulations: 892
+- Successful simulations: 0 (0%)
+- Failed simulations: 892
+- Total execution time: 772s (12 minutes)
+
+Dataset Structure:
+- Baseline scenario: ./simulations/features/baseline/
+- Defense scenario: ./simulations/features/defense/
+- Defense vs Attack scenario: ./simulations/features/defense_vs_attack/
+
+File Counts:
+- Baseline files: 0
+- Defense files: 0
+- Attack files: 0
+
+Dataset size: 20K
+
+Phase Timeline (per simulation):
+- Phase 1 (0-60s): Network stabilization
+- Phase 2 (61-80s): Baseline measurement → baseline/*.csv
+- Phase 3 (80s): Defense activation
+- Phase 4 (80-140s): Defense stabilization
+- Phase 5 (141-160s): Defense measurement → defense/*.csv
+- Phase 6 (160s): Attack activation
+- Phase 7 (160-220s): Attack/Defense interaction
+- Phase 8 (221-240s): Attack vs Defense measurement → defense_vs_attack/*.csv

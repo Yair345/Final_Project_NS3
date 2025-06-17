@@ -495,6 +495,17 @@ FlowMonitor::SerializeToXmlFile (std::string fileName, bool enableHistograms, bo
   os.close ();
 }
 
+void
+FlowMonitor::ResetAllStats()
+{
+  NS_LOG_FUNCTION(this);
+  
+  // Simply clear all flow statistics maps
+  m_flowStats.clear();
+  m_flowProbes.clear();
+  
+  NS_LOG_INFO("All FlowMonitor statistics have been reset");
+}
 
 } // namespace ns3
 

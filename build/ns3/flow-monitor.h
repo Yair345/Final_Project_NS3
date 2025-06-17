@@ -240,6 +240,14 @@ public:
   /// \param enableProbes if true, include also the per-probe/flow pair statistics in the output
   void SerializeToXmlFile (std::string fileName, bool enableHistograms, bool enableProbes);
 
+  /**
+   * \brief Reset all flow statistics to zero
+   * 
+   * This method clears all accumulated statistics for all flows,
+   * allowing for fresh measurements from the current time point.
+   */
+  void ResetAllStats();
+
 
 protected:
 

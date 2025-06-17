@@ -1,6 +1,6 @@
-# project ns (3.19) configured on Fri Jan 24 09:25:09 2025 by
+# project ns (3.19) configured on Tue Jun 17 22:57:13 2025 by
 # waf 1.7.13 (abi 98, python 2070cf0 on linux2)
-# using ./waf configure
+# using ./waf configure --enable-examples --enable-tests
 #
 ----------------------------------------
 Setting top to
@@ -10,15 +10,15 @@ Setting out to
 /home/user/Downloads/MANETs-OLSR-Ns3-Node-Isolation-Attacks-Prevention-main/build
 ----------------------------------------
 Checking for 'gcc' (c compiler)
-find program=['gcc', 'cc'] paths=['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/snap/bin'] var='CC' -> '/usr/bin/gcc'
-find program=['ar'] paths=['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/snap/bin'] var='AR' -> '/usr/bin/ar'
+find program=['gcc', 'cc'] paths=['/home/user/bin', '/home/user/.local/bin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/games', '/usr/local/games', '/snap/bin'] var='CC' -> '/usr/bin/gcc'
+find program=['ar'] paths=['/home/user/bin', '/home/user/.local/bin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/games', '/usr/local/games', '/snap/bin'] var='AR' -> '/usr/bin/ar'
 /usr/bin/gcc
 ----------------------------------------
 Checking for cc version
 5.4.0
 ----------------------------------------
 Checking for 'g++' (c++ compiler)
-find program=['g++', 'c++'] paths=['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/snap/bin'] var='CXX' -> '/usr/bin/g++'
+find program=['g++', 'c++'] paths=['/home/user/bin', '/home/user/.local/bin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/games', '/usr/local/games', '/snap/bin'] var='CXX' -> '/usr/bin/g++'
 (tool ar is already loaded, skipping)
 /usr/bin/g++
 ---------------------------------------------------------
@@ -38,7 +38,7 @@ ok
 ---------------------------------------------------------
 Checking for program python
 /usr/bin/python
-find program=['python'] paths=['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/snap/bin'] var='PYTHON' -> '/usr/bin/python'
+find program=['python'] paths=['/home/user/bin', '/home/user/.local/bin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/games', '/usr/local/games', '/snap/bin'] var='PYTHON' -> '/usr/bin/python'
 ['/usr/bin/python', '-c', 'import sys\nfor x in sys.version_info: print(str(x))']
 out: 2
 7
@@ -115,7 +115,7 @@ from /home/user/Downloads/MANETs-OLSR-Ns3-Node-Isolation-Attacks-Prevention-main
     raise Errors.BuildError(self.producer.error)
 BuildError: Build failed
  -> task in 'testprog' failed (exit status 1): 
-	{task 140456777654160: cxxprogram test.cpp.1.o -> testprog}
+	{task 140694126499920: cxxprogram test.cpp.1.o -> testprog}
 ['/usr/bin/g++', '-Wl,-Bsymbolic-functions', '-Wl,-z,relro', 'test.cpp.1.o', '-o', '/home/user/Downloads/MANETs-OLSR-Ns3-Node-Isolation-Attacks-Prevention-main/build/.conf_check_3b2479b91ea1f8aedc2bbc867fa4858e/testbuild/testprog', '-Wl,-Bstatic', '-Wl,-Bdynamic', '-L/usr/lib', '-lpython2.7']
 
 not found
@@ -144,7 +144,7 @@ yes
 ------------------------------------------------------------------------------------------------
 Checking for program /usr/bin/python-config,python2.7-config,python-config-2.7,python2.7m-config
 not found
-find program=['/usr/bin/python-config', 'python2.7-config', 'python-config-2.7', 'python2.7m-config'] paths=['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/snap/bin'] var='PYTHON_CONFIG' -> ''
+find program=['/usr/bin/python-config', 'python2.7-config', 'python-config-2.7', 'python2.7m-config'] paths=['/home/user/bin', '/home/user/.local/bin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/games', '/usr/local/games', '/snap/bin'] var='PYTHON_CONFIG' -> ''
 from /home/user/Downloads/MANETs-OLSR-Ns3-Node-Isolation-Attacks-Prevention-main/bindings/python: Could not find the program /usr/bin/python-config,python2.7-config,python-config-2.7,python2.7m-config
 Include path for Python extensions (found via distutils module): '/usr/include/python2.7'
 
@@ -183,7 +183,7 @@ from /home/user/Downloads/MANETs-OLSR-Ns3-Node-Isolation-Attacks-Prevention-main
     raise Errors.BuildError(self.producer.error)
 BuildError: Build failed
  -> task in 'testprog' failed (exit status 1): 
-	{task 140456777808656: cxx test.cpp -> test.cpp.1.o}
+	{task 140694126662608: cxx test.cpp -> test.cpp.1.o}
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-Wall', '-Werror', '-fno-strict-aliasing', '-fwrapv', '-fstack-protector-strong', '-fno-strict-aliasing', '-I/usr/include/python2.7', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DPYTHONDIR="/usr/local/lib/python2.7/dist-packages"', '-DPYTHONARCHDIR="/usr/local/lib/python2.7/dist-packages"', '-DNDEBUG', '-D_FORTIFY_SOURCE=2', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 
 :-(
@@ -207,7 +207,7 @@ not found
 ------------------------------------------------------------------------------------------------
 Checking for program pkg-config
 /usr/bin/pkg-config
-find program=['pkg-config'] paths=['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/snap/bin'] var='PKGCONFIG' -> '/usr/bin/pkg-config'
+find program=['pkg-config'] paths=['/home/user/bin', '/home/user/.local/bin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/games', '/usr/local/games', '/snap/bin'] var='PKGCONFIG' -> '/usr/bin/pkg-config'
 ------------------------------------------------------------------------------------------------
 Checking for 'gtk+-2.0' >= 2.12
 ['/usr/bin/pkg-config', '--atleast-version=2.12', 'gtk+-2.0']
@@ -234,17 +234,17 @@ int main(int argc, char **argv) {
 [1/2] [32mcxx: build/.conf_check_656b178ce7442053dff90315b31a1cc5/test.cpp -> build/.conf_check_656b178ce7442053dff90315b31a1cc5/testbuild/test.cpp.1.o
 [0m
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-Wall', '-Werror', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
-err: ../test.cpp: In function 'int main(int, char**)':
-../test.cpp:5:7: error: 'uint128_t' was not declared in this scope
+err: ../test.cpp: In function ‘int main(int, char**)’:
+../test.cpp:5:7: error: ‘uint128_t’ was not declared in this scope
   if ((uint128_t *) 0) return 0;
        ^
-../test.cpp:5:18: error: expected primary-expression before ')' token
+../test.cpp:5:18: error: expected primary-expression before ‘)’ token
   if ((uint128_t *) 0) return 0;
                   ^
-../test.cpp:5:20: error: expected ')' before numeric constant
+../test.cpp:5:20: error: expected ‘)’ before numeric constant
   if ((uint128_t *) 0) return 0;
                     ^
-../test.cpp:6:14: error: 'uint128_t' was not declared in this scope
+../test.cpp:6:14: error: ‘uint128_t’ was not declared in this scope
   if (sizeof (uint128_t)) return 0;
               ^
 
@@ -255,7 +255,7 @@ from /home/user/Downloads/MANETs-OLSR-Ns3-Node-Isolation-Attacks-Prevention-main
     raise Errors.BuildError(self.producer.error)
 BuildError: Build failed
  -> task in 'testprog' failed (exit status 1): 
-	{task 140456795871376: cxx test.cpp -> test.cpp.1.o}
+	{task 140694126387536: cxx test.cpp -> test.cpp.1.o}
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-Wall', '-Werror', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 
 not found
@@ -343,7 +343,7 @@ from /home/user/Downloads/MANETs-OLSR-Ns3-Node-Isolation-Attacks-Prevention-main
     raise Errors.BuildError(self.producer.error)
 BuildError: Build failed
  -> task in 'testprog' failed (exit status 1): 
-	{task 140456795913744: cxx test.cpp -> test.cpp.1.o}
+	{task 140694126387280: cxx test.cpp -> test.cpp.1.o}
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-Wall', '-Werror', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_STDINT_H=1', '-DHAVE_INTTYPES_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 
 not found
@@ -518,7 +518,7 @@ from /home/user/Downloads/MANETs-OLSR-Ns3-Node-Isolation-Attacks-Prevention-main
     raise Errors.BuildError(self.producer.error)
 BuildError: Build failed
  -> task in 'testprog' failed (exit status 1): 
-	{task 140456795984912: cxx test.cpp -> test.cpp.1.o}
+	{task 140694126662416: cxx test.cpp -> test.cpp.1.o}
 ['/usr/bin/g++', '-O0', '-ggdb', '-g3', '-Wall', '-Werror', '-DNS3_ASSERT_ENABLE', '-DNS3_LOG_ENABLE', '-DHAVE___UINT128_T=1', '-DINT64X64_USE_128=1', '-DHAVE_SYS_TYPES_H=1', '-DHAVE_SYS_STAT_H=1', '-DHAVE_DIRENT_H=1', '-DHAVE_STDLIB_H=1', '-DHAVE_GETENV=1', '-DHAVE_SIGNAL_H=1', '-DHAVE_PTHREAD_H=1', '-DHAVE_STDINT_H=1', '-DHAVE_INTTYPES_H=1', '../test.cpp', '-c', '-o', 'test.cpp.1.o']
 
 not found
@@ -682,11 +682,11 @@ yes
 ------------------------------------------------------------------------------------------------
 Checking for program sudo
 /usr/bin/sudo
-find program=['sudo'] paths=['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/snap/bin'] var='SUDO' -> '/usr/bin/sudo'
+find program=['sudo'] paths=['/home/user/bin', '/home/user/.local/bin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/games', '/usr/local/games', '/snap/bin'] var='SUDO' -> '/usr/bin/sudo'
 ------------------------------------------------------------------------------------------------
 Checking for program valgrind
 not found
-find program=['valgrind'] paths=['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/snap/bin'] var='VALGRIND' -> ''
+find program=['valgrind'] paths=['/home/user/bin', '/home/user/.local/bin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/games', '/usr/local/games', '/snap/bin'] var='VALGRIND' -> ''
 from /home/user/Downloads/MANETs-OLSR-Ns3-Node-Isolation-Attacks-Prevention-main: Could not find the program valgrind
 ------------------------------------------------------------------------------------------------
 Checking for 'gsl'
@@ -785,5 +785,5 @@ ok
 ------------------------------------------------------------------------------------------------
 Checking for program doxygen
 not found
-find program=['doxygen'] paths=['/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/snap/bin'] var='DOXYGEN' -> ''
+find program=['doxygen'] paths=['/home/user/bin', '/home/user/.local/bin', '/usr/local/sbin', '/usr/local/bin', '/usr/sbin', '/usr/bin', '/sbin', '/bin', '/usr/games', '/usr/local/games', '/snap/bin'] var='DOXYGEN' -> ''
 from /home/user/Downloads/MANETs-OLSR-Ns3-Node-Isolation-Attacks-Prevention-main: Could not find the program doxygen

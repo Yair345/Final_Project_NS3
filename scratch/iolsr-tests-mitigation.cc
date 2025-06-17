@@ -30,10 +30,9 @@ uint32_t g_hnaCount = 0;
 
 // uint32_t g_hnaCount = 0;
 
-// Phase-based measurement variables
-Ptr<FlowMonitor> g_baselineFlowMonitor;
-Ptr<FlowMonitor> g_defenseFlowMonitor;
-Ptr<FlowMonitor> g_attackFlowMonitor;
+// Single FlowMonitor approach
+Ptr<FlowMonitor> g_flowMonitor = 0;
+FlowMonitorHelper g_flowHelper;
 
 // Timing constants for the new phases
 const double BASELINE_START = 61.0;
@@ -577,8 +576,7 @@ std::string ToString(double value) {
 }
 
 // Function to save metrics for a specific scenario (C++11 compatible with all metrics)
-static void SaveScenarioMetrics(const std::string& scenario, Ptr<FlowMonitor> flowMon, 
-                               FlowMonitorHelper& flowHelper, NodeContainer& nodes, 
+static void SaveScenarioMetrics(const std::string& scenario, NodeContainer& nodes, 
                                double startTime, double endTime) {
     
     std::string filename = g_outputBaseDir + scenario + "/metrics_output-" + 
@@ -595,10 +593,10 @@ static void SaveScenarioMetrics(const std::string& scenario, Ptr<FlowMonitor> fl
     file << std::fixed << std::setprecision(6);
     
     // Calculate metrics using your existing ExtractAndLogMetrics logic
-    if (flowMon) {
-        flowMon->CheckForLostPackets();
-        Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier>(flowHelper.GetClassifier());
-        std::map<FlowId, FlowMonitor::FlowStats> stats = flowMon->GetFlowStats();
+	if (g_flowMonitor) {
+        g_flowMonitor->CheckForLostPackets();
+        Ptr<Ipv4FlowClassifier> classifier = DynamicCast<Ipv4FlowClassifier>(g_flowHelper.GetClassifier());
+        std::map<FlowId, FlowMonitor::FlowStats> stats = g_flowMonitor->GetFlowStats();
 
         double totalTxPackets = 0, totalRxPackets = 0, totalLostPackets = 0, totalDelay = 0;
         double totalThroughput = 0, totalJitter = 0, totalHopCount = 0;
@@ -719,12 +717,7 @@ static void ResetOlsrCounters() {
 static void EndBaselineMeasurement(NodeContainer* nodes) {
     NS_LOG_INFO("Ending baseline measurement at " << Simulator::Now().GetSeconds() << "s");
     
-    FlowMonitorHelper flowHelper;
-    SaveScenarioMetrics("baseline", g_baselineFlowMonitor, flowHelper, *nodes, 
-                       BASELINE_START, BASELINE_END);
-    
-    // Clean up
-    g_baselineFlowMonitor = 0; // C++11 compatible null assignment
+    SaveScenarioMetrics("baseline", *nodes, BASELINE_START, BASELINE_END);
 }
 
 // PHASE 2: Baseline measurement functions
@@ -732,9 +725,10 @@ static void StartBaselineMeasurement(NodeContainer* nodes) {
     NS_LOG_INFO("Starting baseline measurement at " << Simulator::Now().GetSeconds() << "s");
     ResetOlsrCounters();
     
-    // Create new FlowMonitor for baseline phase
-    FlowMonitorHelper flowHelper;
-    g_baselineFlowMonitor = flowHelper.InstallAll();
+    // Reset FlowMonitor statistics for clean measurement
+    if (g_flowMonitor) {
+        g_flowMonitor->ResetAllStats();
+    }
     
     // Schedule end of baseline measurement
     Simulator::Schedule(Seconds(MEASUREMENT_DURATION), &EndBaselineMeasurement, nodes);
@@ -743,12 +737,7 @@ static void StartBaselineMeasurement(NodeContainer* nodes) {
 static void EndDefenseMeasurement(NodeContainer* nodes) {
     NS_LOG_INFO("Ending defense measurement at " << Simulator::Now().GetSeconds() << "s");
     
-    FlowMonitorHelper flowHelper;
-    SaveScenarioMetrics("defense", g_defenseFlowMonitor, flowHelper, *nodes, 
-                       DEFENSE_MEASUREMENT_START, DEFENSE_MEASUREMENT_END);
-    
-    // Clean up
-    g_defenseFlowMonitor = 0; // C++11 compatible null assignment
+    SaveScenarioMetrics("defense", *nodes, DEFENSE_MEASUREMENT_START, DEFENSE_MEASUREMENT_END);
 }
 
 // PHASE 5: Defense measurement functions
@@ -756,9 +745,10 @@ static void StartDefenseMeasurement(NodeContainer* nodes) {
     NS_LOG_INFO("Starting defense measurement at " << Simulator::Now().GetSeconds() << "s");
     ResetOlsrCounters();
     
-    // Create new FlowMonitor for defense phase
-    FlowMonitorHelper flowHelper;
-    g_defenseFlowMonitor = flowHelper.InstallAll();
+    // Reset FlowMonitor statistics for clean measurement
+    if (g_flowMonitor) {
+        g_flowMonitor->ResetAllStats();
+    }
     
     // Schedule end of defense measurement
     Simulator::Schedule(Seconds(MEASUREMENT_DURATION), &EndDefenseMeasurement, nodes);
@@ -767,12 +757,7 @@ static void StartDefenseMeasurement(NodeContainer* nodes) {
 static void EndAttackMeasurement(NodeContainer* nodes) {
     NS_LOG_INFO("Ending attack vs defense measurement at " << Simulator::Now().GetSeconds() << "s");
     
-    FlowMonitorHelper flowHelper;
-    SaveScenarioMetrics("defense_vs_attack", g_attackFlowMonitor, flowHelper, *nodes, 
-                       ATTACK_MEASUREMENT_START, ATTACK_MEASUREMENT_END);
-    
-    // Clean up
-    g_attackFlowMonitor = 0; // C++11 compatible null assignment
+    SaveScenarioMetrics("defense_vs_attack", *nodes, ATTACK_MEASUREMENT_START, ATTACK_MEASUREMENT_END);
 }
 
 // PHASE 8: Attack vs Defense measurement functions
@@ -780,9 +765,10 @@ static void StartAttackMeasurement(NodeContainer* nodes) {
     NS_LOG_INFO("Starting attack vs defense measurement at " << Simulator::Now().GetSeconds() << "s");
     ResetOlsrCounters();
     
-    // Create new FlowMonitor for attack phase
-    FlowMonitorHelper flowHelper;
-    g_attackFlowMonitor = flowHelper.InstallAll();
+    // Reset FlowMonitor statistics for clean measurement
+    if (g_flowMonitor) {
+        g_flowMonitor->ResetAllStats();
+    }
     
     // Schedule end of attack measurement
     Simulator::Schedule(Seconds(MEASUREMENT_DURATION), &EndAttackMeasurement, nodes);
@@ -899,8 +885,8 @@ int main (int argc, char *argv[]){
 	uint32_t nProtocol = 0; //IOLSR=0, DSDV=1
 
 	// Set running time
-	double dSimulationSeconds = 240.0;
-	uint32_t nSimulationSeconds = 240;
+	double dSimulationSeconds = 250.0;
+	uint32_t nSimulationSeconds = 250;
 	//double dSimulationSeconds = 301.0;
 	//uint32_t nSimulationSeconds = 301;
 
@@ -1243,6 +1229,8 @@ int main (int argc, char *argv[]){
 	// Print Topology Set
 	//Simulator::Schedule(Seconds (35) , &PrintTopologySet, &nodes);
 
+	g_flowMonitor = g_flowHelper.InstallAll();
+
 	// Schedule connectivity check before baseline
 	Simulator::Schedule(Seconds(58.0), &CheckAndReportConnectivity, &nodes);
 	
@@ -1298,8 +1286,8 @@ int main (int argc, char *argv[]){
 	Simulator::Run ();
 
 	//RngSeedManager::GetRun()
-	std::ostringstream oss;
-	oss << "./simulations/features/att-1_def-1/metrics_output-" << RngSeedManager::GetRun() << ".csv";
+	// std::ostringstream oss;
+	// oss << "./simulations/features/att-1_def-1/metrics_output-" << RngSeedManager::GetRun() << ".csv";
 
 	// ExtractAndLogMetrics(flowMon, flowHelper, nodes, oss.str().c_str());
 

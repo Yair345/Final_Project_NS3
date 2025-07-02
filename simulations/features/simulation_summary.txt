@@ -1,12 +1,12 @@
 ML Dataset Generation Summary Report
-Generated on: ג' יונ 17 22:14:04 IDT 2025
+Generated on: ד' יונ 18 05:36:32 IDT 2025
 ========================================
 
 Simulation Configuration:
 - Total simulations: 892
 - Successful simulations: 0 (0%)
-- Failed simulations: 892
-- Total execution time: 772s (12 minutes)
+- Failed simulations: 21
+- Total execution time: 21057s (350 minutes)
 
 Dataset Structure:
 - Baseline scenario: ./simulations/features/baseline/
